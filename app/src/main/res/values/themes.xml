@@ -1,0 +1,10 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PhotoGallery" parent="Theme.Material3.DayNight">
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">#E64A19</item>
+        <item name="colorPrimaryDark">#BF360C</item>
+    </style>
+
+    <style name="Theme.PhotoGallery" parent="Base.Theme.PhotoGallery" />
+</resources>
