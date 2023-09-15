@@ -6,31 +6,34 @@ import androidx.annotation.NonNull;
  * Created by Tom Buczynski on 27.08.2023.
  */
 public class GalleryItem {
-   private final String mId;
-   private final String mTitle;
-   private final String mUrl;
+   private String id;
+   private String title;
+   private String url_s;
 
    public GalleryItem(String id, String title, String url) {
-      mId = id;
-      mTitle = title;
-      mUrl = url;
+      this.id = id;
+      this.title = title;
+      url_s = url;
+   }
+
+   public GalleryItem() {
    }
 
    public String getId() {
-      return mId;
+      return id;
    }
 
    public String getTitle() {
-      return mTitle;
+      return title;
    }
 
    public String getUrl() {
-      return mUrl;
+      return url_s;
    }
 
    @NonNull
    @Override
    public String toString() {
-      return mId + ": " + mTitle;
+      return id + ": " + title;
    }
 }

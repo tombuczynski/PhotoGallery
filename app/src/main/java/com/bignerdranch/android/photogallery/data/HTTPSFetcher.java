@@ -20,30 +20,8 @@ public class HTTPSFetcher {
     public static final int ERR_HTTPS_URL_REQUIRED = 1;
     public static final int ERR_IO = 2;
     public static final int ERR_CANCELED = 3;
+    public static final int ERR_HTTP = 1000;
 
-    public static class Result<T> {
-        private final int mErrorCode;
-        private final String mErrorMessage;
-        private final T mContent;
-
-        public Result(T content, int errorCode, String errorMessage) {
-            mErrorCode = errorCode;
-            mErrorMessage = errorMessage;
-            mContent = content;
-        }
-
-        public int getErrorCode() {
-            return mErrorCode;
-        }
-
-        public String getErrorMessage() {
-            return mErrorMessage;
-        }
-
-        public T getContent() {
-            return mContent;
-        }
-    }
     public static Result<byte[]> fetchBytesFromURL(@NonNull String url) {
         HttpsURLConnection urlConnection = null;
         InputStream inputStream = null;
@@ -62,7 +40,7 @@ public class HTTPSFetcher {
 
             int responseCode = urlConnection.getResponseCode();
             if (responseCode != HttpsURLConnection.HTTP_OK) {
-                return new Result<>(null, responseCode, urlConnection.getResponseMessage());
+                return new Result<>(null, responseCode + ERR_HTTP, urlConnection.getResponseMessage());
             }
 
             byte[] buf = new byte[1024];

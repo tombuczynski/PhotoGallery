@@ -1,9 +1,10 @@
 package com.bignerdranch.android.photogallery.ui;
 
 import com.bignerdranch.android.photogallery.data.FlickrFetcher;
-import com.bignerdranch.android.photogallery.data.GalleryItem;
-import com.bignerdranch.android.photogallery.data.HTTPSFetcher;
+import com.bignerdranch.android.photogallery.data.GalleryPage;
+import com.bignerdranch.android.photogallery.data.Result;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -18,15 +19,25 @@ import androidx.lifecycle.ViewModel;
 public class GalleryViewModel extends ViewModel {
     private Executor mExecutor = null;
 
-    private MutableLiveData<HTTPSFetcher.Result<List<GalleryItem>>> mResult;
+    private MutableLiveData<List<Result<GalleryPage>>> mGalleryPages;
     private String mApiKey = "";
 
+    private Integer mRequestedPage = null;
 
-    public LiveData<HTTPSFetcher.Result<List<GalleryItem>>> getResult() {
-        if (mResult == null)
-            mResult = new MutableLiveData<>();
+    public Integer getRequestedPage() {
+        return mRequestedPage;
+    }
 
-        return mResult;
+    public void setRequestedPage(Integer requestedPage) {
+        mRequestedPage = requestedPage;
+    }
+
+
+    public LiveData<List<Result<GalleryPage>>> getGalleryPages() {
+        if (mGalleryPages == null)
+            mGalleryPages = new MutableLiveData<>(new ArrayList<>());
+
+        return mGalleryPages;
     }
 
     public void setApiKey(String apiKey) {
@@ -40,10 +51,49 @@ public class GalleryViewModel extends ViewModel {
         return mExecutor;
     }
 
-    public void loadContentAsync()
+    public boolean loadPageAsync()
     {
-        getResult();
-        getExecutor().execute(() -> mResult.postValue(FlickrFetcher.fetchRecentGalleryItems(mApiKey)));
+        List<Result<GalleryPage>> galleryPages = getGalleryPages().getValue();
+        assert galleryPages != null;
+
+        if (mRequestedPage != null && mRequestedPage == galleryPages.size() && galleryPages.get(mRequestedPage - 1).getErrorCode() == FlickrFetcher.ERR_OK) {
+            return false;
+        }
+
+        if (mRequestedPage == null) {
+            mRequestedPage = 1;
+        } else if (mRequestedPage > galleryPages.size()){
+            return true;
+        } else {
+            galleryPages.remove(mRequestedPage - 1);
+        }
+
+        executeFetchPage(galleryPages);
+
+        return true;
     }
 
+    private void executeFetchPage(List<Result<GalleryPage>> galleryPages) {
+
+        getExecutor().execute(() -> {
+            Result<GalleryPage> result = FlickrFetcher.fetchRecentGalleryItems(mApiKey, mRequestedPage);
+
+            List<Result<GalleryPage>> updatedGalleryPages = new ArrayList<>(galleryPages);
+            updatedGalleryPages.add(result);
+
+            mGalleryPages.postValue(updatedGalleryPages);
+        });
+    }
+
+    public void loadNextPageAsync() {
+        if (! loadPageAsync()) {
+            List<Result<GalleryPage>> galleryPages = getGalleryPages().getValue();
+            assert galleryPages != null;
+
+            if (galleryPages.get(mRequestedPage - 1).getContent().getPages() > mRequestedPage) {
+                mRequestedPage++;
+                executeFetchPage(galleryPages);
+            }
+        }
+    }
 }

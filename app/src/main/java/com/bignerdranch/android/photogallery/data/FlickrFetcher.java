@@ -2,49 +2,42 @@ package com.bignerdranch.android.photogallery.data;
 
 import android.net.Uri;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Tom Buczynski on 27.08.2023.
  */
 public class FlickrFetcher extends JSONFetcher {
 
-   public static Result<List<GalleryItem>> fetchRecentGalleryItems(String apiKey) {
-      String url = createRESTRequest(apiKey, "flickr.photos.getRecent");
+   public static final int ERR_FLICKR = 2000;
 
-      Result<JSONObject> r = fetchJSONFromURL(url, StandardCharsets.UTF_8);
+   public static Result<GalleryPage> fetchRecentGalleryItems(String apiKey, Integer page) {
+      String url = createRESTRequest(apiKey, "flickr.photos.getRecent", "page", page.toString());
+
+      //Result<JSONObject> r = fetchJSONFromURL(url, StandardCharsets.UTF_8);
+
+      Result<String> r = fetchStringFromURL(url, StandardCharsets.UTF_8);
 
       if (r.getErrorCode() != ERR_OK)
          return new Result<>(null, r.getErrorCode(), r.getErrorMessage());
 
       try {
-         ArrayList<GalleryItem> itemList = new ArrayList<>();
 
-         JSONObject photos = r.getContent().getJSONObject("photos");
-         JSONArray photoArray = photos.getJSONArray("photo");
+         Gson gson = new Gson();
+         FlickrPhotoGallery photos = gson.fromJson(r.getContent(), FlickrPhotoGallery.class);
 
-         for (int i = 0; i < photoArray.length(); i++) {
-            JSONObject photo = photoArray.getJSONObject(i);
-
-            if (! photo.has("url_s"))
-               continue;
-
-            String id = photo.getString("id");
-            String title = photo.getString("title");
-            String url_s = photo.getString("url_s");
-            GalleryItem item = new GalleryItem(id, title, url_s);
-
-            itemList.add(item);
+         if ("ok".equalsIgnoreCase(photos.getStat())){
+            return new Result<>(photos.getPage(), r.getErrorCode(), r.getErrorMessage());
+         } else if ("fail".equalsIgnoreCase(photos.getStat())){
+            return new Result<>(null, photos.getCode() + ERR_FLICKR, photos.getMessage());
+         } else {
+            return new Result<>(null, ERR_FLICKR, "");
          }
 
-         return new Result<>(itemList, r.getErrorCode(), r.getErrorMessage());
-      } catch (JSONException e) {
+      } catch (JsonSyntaxException e) {
          return new Result<>(null, ERR_JSON, e.getLocalizedMessage());
       }
    }

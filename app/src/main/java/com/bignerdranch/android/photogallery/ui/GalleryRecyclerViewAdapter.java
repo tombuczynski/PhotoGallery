@@ -1,14 +1,10 @@
 package com.bignerdranch.android.photogallery.ui;
 
-import android.annotation.SuppressLint;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.bignerdranch.android.photogallery.data.GalleryItem;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,45 +17,68 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecyclerViewAdapter.GalleryItemViewHolder> {
 
-   private List<GalleryItem> mGalleryItems = new ArrayList<>();
+    private List<GalleryItem> mGalleryItems = new ArrayList<>();
 
-   @NonNull
-   @Override
-   public GalleryItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-      TextView textView = new TextView(parent.getContext());
+    private boolean mIsLastItemBinded = false;
 
-      return new GalleryItemViewHolder(textView);
-   }
+    @NonNull
+    @Override
+    public GalleryItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        TextView textView = new TextView(parent.getContext());
 
-   @Override
-   public void onBindViewHolder(@NonNull GalleryItemViewHolder holder, int position) {
-      holder.bind(mGalleryItems.get(position), position);
-   }
+        return new GalleryItemViewHolder(textView);
+    }
 
-   @Override
-   public int getItemCount() {
-      return mGalleryItems.size();
-   }
+    @Override
+    public void onBindViewHolder(@NonNull GalleryItemViewHolder holder, int position) {
+        holder.bind(mGalleryItems.get(position), position);
+        if (position == getItemCount() - 1)
+            mIsLastItemBinded = true;
+    }
 
-   public void update(List<GalleryItem> galleryItems) {
-      mGalleryItems = galleryItems;
+    @Override
+    public int getItemCount() {
+        return mGalleryItems.size();
+    }
 
-      notifyDataSetChanged();
-   }
+    public void update(List<GalleryItem> galleryItems, boolean reload) {
+        int oldCount = mGalleryItems.size();
+        int newCount = galleryItems.size();
 
-   public static class GalleryItemViewHolder extends RecyclerView.ViewHolder {
+        mGalleryItems = galleryItems;
 
-      private final TextView mTextView;
+        if (newCount > oldCount) {
+            notifyItemRangeInserted(oldCount, newCount - oldCount);
+        } else if (newCount < oldCount) {
+            notifyItemRangeRemoved(newCount, oldCount - newCount);
+        }
 
-      public GalleryItemViewHolder(@NonNull View itemView) {
-         super(itemView);
+        mIsLastItemBinded = false;
+    }
 
-         mTextView = (TextView)itemView;
-      }
+    public boolean isLastItemBinded() {
+        if (mIsLastItemBinded) {
+            mIsLastItemBinded = false;
 
-      public void bind(@NonNull GalleryItem item, int position) {
-         mTextView.setText("" + (position+1) +" " + item.toString());
-      }
-   }
+            return true;
+        }
+
+        return false;
+    }
+
+    public static class GalleryItemViewHolder extends RecyclerView.ViewHolder {
+
+        private final TextView mTextView;
+
+        public GalleryItemViewHolder(@NonNull View itemView) {
+            super(itemView);
+
+            mTextView = (TextView) itemView;
+        }
+
+        public void bind(@NonNull GalleryItem item, int position) {
+            mTextView.setText(String.format("%d %s", position + 1, item.toString()));
+        }
+    }
 
 }
