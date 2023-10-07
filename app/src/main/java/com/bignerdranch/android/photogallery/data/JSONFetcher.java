@@ -16,7 +16,7 @@ public class JSONFetcher extends HTTPSFetcher {
     public static Result<JSONObject> fetchJSONFromURL(@NonNull String url, Charset charset) {
         Result<String> r = fetchStringFromURL(url, charset);
 
-        if (r.getErrorCode() != ERR_OK)
+        if (r.getErrorCode() != Result.ERR_OK)
             return new Result<>(null, r.getErrorCode(), r.getErrorMessage());
 
         try {
@@ -24,7 +24,7 @@ public class JSONFetcher extends HTTPSFetcher {
 
             return new Result<>(json, r.getErrorCode(), r.getErrorMessage());
         } catch (JSONException e) {
-            return new Result<>(null, ERR_JSON, e.getLocalizedMessage());
+            return new Result<>(null, ERR_JSON, e.toString());
         }
     }
 }

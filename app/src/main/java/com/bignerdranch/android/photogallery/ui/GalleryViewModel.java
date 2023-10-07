@@ -1,5 +1,10 @@
 package com.bignerdranch.android.photogallery.ui;
 
+import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.LruCache;
+
 import com.bignerdranch.android.photogallery.data.FlickrFetcher;
 import com.bignerdranch.android.photogallery.data.GalleryPage;
 import com.bignerdranch.android.photogallery.data.Result;
@@ -9,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import androidx.core.os.HandlerCompat;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -17,11 +23,15 @@ import androidx.lifecycle.ViewModel;
  * Created by Tom Buczynski on 25.08.2023.
  */
 public class GalleryViewModel extends ViewModel {
+    private static final int BITMAP_CACHE_SIZE = 200;
+
     private Executor mExecutor = null;
+    private LruCache<String, Result<Bitmap>> mBitmapLruCache;
+    private Handler mUiHandler = null;
 
     private MutableLiveData<List<Result<GalleryPage>>> mGalleryPages;
-    private String mApiKey = "";
 
+    private String mApiKey = "";
     private Integer mRequestedPage = null;
 
     public Integer getRequestedPage() {
@@ -51,12 +61,27 @@ public class GalleryViewModel extends ViewModel {
         return mExecutor;
     }
 
+    public Handler getUiHandler() {
+        if (mUiHandler == null) {
+            mUiHandler = HandlerCompat.createAsync(Looper.getMainLooper());
+        }
+
+        return mUiHandler;
+    }
+
+    public LruCache<String, Result<Bitmap>> getBitmapLruCache() {
+        if (mBitmapLruCache == null)
+            mBitmapLruCache = new LruCache<>(BITMAP_CACHE_SIZE);
+
+        return mBitmapLruCache;
+    }
+
     public boolean loadPageAsync()
     {
         List<Result<GalleryPage>> galleryPages = getGalleryPages().getValue();
         assert galleryPages != null;
 
-        if (mRequestedPage != null && mRequestedPage == galleryPages.size() && galleryPages.get(mRequestedPage - 1).getErrorCode() == FlickrFetcher.ERR_OK) {
+        if (mRequestedPage != null && mRequestedPage == galleryPages.size() && galleryPages.get(mRequestedPage - 1).getErrorCode() == Result.ERR_OK) {
             return false;
         }
 
@@ -76,7 +101,8 @@ public class GalleryViewModel extends ViewModel {
     private void executeFetchPage(List<Result<GalleryPage>> galleryPages) {
 
         getExecutor().execute(() -> {
-            Result<GalleryPage> result = FlickrFetcher.fetchRecentGalleryItems(mApiKey, mRequestedPage);
+            Result<GalleryPage> result = FlickrFetcher.getRecentPhotos(mApiKey, mRequestedPage);
+            //Result<GalleryPage> result = FlickrFetcher.searchPhotos(mApiKey, mRequestedPage,"lego");
 
             List<Result<GalleryPage>> updatedGalleryPages = new ArrayList<>(galleryPages);
             updatedGalleryPages.add(result);

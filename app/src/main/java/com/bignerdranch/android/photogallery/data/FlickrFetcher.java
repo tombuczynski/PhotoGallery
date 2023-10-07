@@ -14,14 +14,24 @@ public class FlickrFetcher extends JSONFetcher {
 
    public static final int ERR_FLICKR = 2000;
 
-   public static Result<GalleryPage> fetchRecentGalleryItems(String apiKey, Integer page) {
-      String url = createRESTRequest(apiKey, "flickr.photos.getRecent", "page", page.toString());
+   public static Result<GalleryPage> getRecentPhotos(String apiKey, Integer page) {
+      return fetchGalleryItems(apiKey, "flickr.photos.getRecent", "page", page.toString());
+   }
+
+   public static Result<GalleryPage> searchPhotos(String apiKey, Integer page, String text) {
+
+      return fetchGalleryItems(apiKey, "flickr.photos.search",
+              "text", text, "page", page.toString());
+   }
+
+   private static Result<GalleryPage> fetchGalleryItems(String apiKey, String method, String... params) {
+      String url = createRESTRequest(apiKey, method, params);
 
       //Result<JSONObject> r = fetchJSONFromURL(url, StandardCharsets.UTF_8);
 
       Result<String> r = fetchStringFromURL(url, StandardCharsets.UTF_8);
 
-      if (r.getErrorCode() != ERR_OK)
+      if (r.getErrorCode() != Result.ERR_OK)
          return new Result<>(null, r.getErrorCode(), r.getErrorMessage());
 
       try {
@@ -38,7 +48,7 @@ public class FlickrFetcher extends JSONFetcher {
          }
 
       } catch (JsonSyntaxException e) {
-         return new Result<>(null, ERR_JSON, e.getLocalizedMessage());
+         return new Result<>(null, ERR_JSON, e.toString());
       }
    }
 

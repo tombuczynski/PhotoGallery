@@ -16,7 +16,6 @@ import androidx.annotation.NonNull;
  * Created by Tom Buczynski on 19.07.2023.
  */
 public class HTTPSFetcher {
-    public static final int ERR_OK = 0;
     public static final int ERR_HTTPS_URL_REQUIRED = 1;
     public static final int ERR_IO = 2;
     public static final int ERR_CANCELED = 3;
@@ -31,8 +30,8 @@ public class HTTPSFetcher {
             urlConnection = (HttpsURLConnection) (new URL(url)).openConnection();
             urlConnection.setDoInput(true);
             urlConnection.setRequestMethod("GET");
-            urlConnection.setConnectTimeout(5000);
-            urlConnection.setReadTimeout(2000);
+            urlConnection.setConnectTimeout(15000);
+            urlConnection.setReadTimeout(10000);
             urlConnection.setUseCaches(false);
             urlConnection.connect();
 
@@ -49,12 +48,12 @@ public class HTTPSFetcher {
                 outputStream.write(buf, 0, length);
             }
 
-            return new Result<>(outputStream.toByteArray(), ERR_OK, "OK");
+            return new Result<>(outputStream.toByteArray(), Result.ERR_OK, "OK");
 
         } catch (IOException e) {
-            return new Result<>(null, ERR_IO, e.getLocalizedMessage());
+            return new Result<>(null, ERR_IO, e.toString());
         } catch (ClassCastException e) {
-            return new Result<>(null, ERR_HTTPS_URL_REQUIRED, e.getLocalizedMessage());
+            return new Result<>(null, ERR_HTTPS_URL_REQUIRED, e.toString());
         } finally {
             if (urlConnection != null) {
 
@@ -75,7 +74,7 @@ public class HTTPSFetcher {
     public static Result<String> fetchStringFromURL(@NonNull String url, Charset charset) {
         Result<byte[]> r = fetchBytesFromURL(url);
 
-        if (r.getErrorCode() != ERR_OK)
+        if (r.getErrorCode() != Result.ERR_OK)
             return new Result<>(null, r.getErrorCode(), r.getErrorMessage());
 
         return new Result<>(charset != null ? new String((byte[])r.getContent(), charset) : new String((byte[])r.getContent(), StandardCharsets.UTF_8),

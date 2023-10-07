@@ -9,9 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.ViewTreeObserver;
 
-import com.bignerdranch.android.photogallery.data.FlickrFetcher;
 import com.bignerdranch.android.photogallery.data.GalleryItem;
 import com.bignerdranch.android.photogallery.data.GalleryPage;
 import com.bignerdranch.android.photogallery.data.Result;
@@ -20,12 +18,12 @@ import com.bignerdranch.android.photogallery.ui.GalleryRecyclerViewAdapter;
 import com.bignerdranch.android.photogallery.ui.GalleryViewModel;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     public static final float PHOTO_REQUIRED_WIDTH = 150f;
+    public RecyclerView mRecyclerView;
 
     private GalleryViewModel mViewModel;
 
@@ -59,29 +57,34 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.d(TAG, "Loading result: " + lastPageResult.getErrorMessage());
 
-                if (lastPageResult.getErrorCode() == FlickrFetcher.ERR_OK) {
-                    List<GalleryItem> galleryItems = new ArrayList<>();
+                if (lastPageResult.getErrorCode() == Result.ERR_OK) {
+                    List<GalleryItem> galleryItemsList = new ArrayList<>();
 
                     for (int i = 0; i < pagesCount; i++) {
-                        GalleryPage page = pages.get(i).getContent();
+                        GalleryItem[] galleryItems = pages.get(i).getContent().getPhotos();
 
-                        galleryItems.addAll(Arrays.asList(page.getPhotos()));
+                        for (GalleryItem item : galleryItems) {
+                            if (item.getUrl() == null || item.getUrl().trim().length() == 0)
+                                continue;
+
+                            galleryItemsList.add(item);
+                        }
                     }
 
-                    mRecyclerViewAdapter.update(galleryItems, false);
+                    mRecyclerViewAdapter.update(galleryItemsList, false);
                 }
             }
         });
     }
 
     private void setupListView() {
-        RecyclerView recyclerView = findViewById(R.id.recycler_view_photos);
+        mRecyclerView = findViewById(R.id.recycler_view_photos);
         GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
-        recyclerView.setLayoutManager(layoutManager);
-        mRecyclerViewAdapter = new GalleryRecyclerViewAdapter();
-        recyclerView.setAdapter(mRecyclerViewAdapter);
+        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerViewAdapter = new GalleryRecyclerViewAdapter(getResources(), mViewModel.getUiHandler(), mViewModel.getBitmapLruCache());
+        mRecyclerView.setAdapter(mRecyclerViewAdapter);
 
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
@@ -103,10 +106,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        recyclerView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        mRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             DisplayMetrics metrics = getResources().getDisplayMetrics();
 
-            float widthDpi = recyclerView.getWidth() / metrics.density;
+            float widthDpi = mRecyclerView.getWidth() / metrics.density;
 
             int spanCount = (int)(widthDpi / PHOTO_REQUIRED_WIDTH) + 1;
 
@@ -116,5 +119,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, String.format("New span count = %d", spanCount));
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        mRecyclerViewAdapter.quit();
     }
 }
