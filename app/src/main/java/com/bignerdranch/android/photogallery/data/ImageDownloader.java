@@ -97,8 +97,11 @@ public class ImageDownloader<T extends ImageDownloader.Callback> extends Handler
     public Result<Bitmap> downloadAsync(@NonNull T targetObject, @NonNull String imageUrl) {
         Result<Bitmap> cachedBitmapResult = mBitmapLruCache.get(imageUrl);
 
-        if (cachedBitmapResult != null)
+        if (cachedBitmapResult != null) {
+            mTargetObject2UrlMap.computeIfPresent(targetObject, (k, v) -> imageUrl);
+
             return cachedBitmapResult;
+        }
 
         mTargetObject2UrlMap.put(targetObject, imageUrl);
         mDownloadsHandler.obtainMessage(MESSAGE_DOWNLOAD, targetObject).sendToTarget();
