@@ -31,7 +31,7 @@ public class HTTPSFetcher {
             urlConnection.setDoInput(true);
             urlConnection.setRequestMethod("GET");
             urlConnection.setConnectTimeout(15000);
-            urlConnection.setReadTimeout(10000);
+            urlConnection.setReadTimeout(30000);
             urlConnection.setUseCaches(false);
             urlConnection.connect();
 

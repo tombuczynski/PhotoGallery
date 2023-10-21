@@ -1,7 +1,9 @@
 package com.bignerdranch.android.photogallery;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -9,6 +11,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.bignerdranch.android.photogallery.data.GalleryItem;
 import com.bignerdranch.android.photogallery.data.GalleryPage;
@@ -19,11 +26,14 @@ import com.bignerdranch.android.photogallery.ui.GalleryViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
-    public static final float PHOTO_REQUIRED_WIDTH = 150f;
-    public RecyclerView mRecyclerView;
+    private static final float PHOTO_REQUIRED_WIDTH = 200f;
+    private RecyclerView mRecyclerView;
+
+    private ProgressBar mProgressLoading;
 
     private GalleryViewModel mViewModel;
 
@@ -38,9 +48,10 @@ public class MainActivity extends AppCompatActivity {
 
         setupViewModel();
         setupListView();
+        mProgressLoading = findViewById(R.id.progressBarLoading);
 
         boolean isLoadind =  mViewModel.loadPageAsync();
-        Log.d(TAG, "loadContentAsync isLoadind: " + isLoadind);
+        Log.d(TAG, "loadPageAsync isLoadind: " + isLoadind);
     }
 
     private void setupViewModel() {
@@ -56,6 +67,12 @@ public class MainActivity extends AppCompatActivity {
                 Result<GalleryPage> lastPageResult = pages.get(pagesCount - 1);
 
                 Log.d(TAG, "Loading result: " + lastPageResult.getErrorMessage());
+                Log.d(TAG, "Loading content Id: " + lastPageResult.getContentId());
+
+                if (! Objects.equals(lastPageResult.getContentId(), mViewModel.getQueryText())) {
+                    mViewModel.reloadPagesAsync();
+                    return;
+                }
 
                 if (lastPageResult.getErrorCode() == Result.ERR_OK) {
                     List<GalleryItem> galleryItemsList = new ArrayList<>();
@@ -71,7 +88,11 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
-                    mRecyclerViewAdapter.update(galleryItemsList, false);
+                    mRecyclerViewAdapter.update(galleryItemsList);
+
+                    mProgressLoading.setVisibility(View.INVISIBLE);
+                } else {
+                    Toast.makeText(this, lastPageResult.getErrorMessage(), Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -121,10 +142,67 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void setupSearchViewMenuItem(MenuItem menuItem) {
+        SearchView searchView = (SearchView) Objects.requireNonNull(menuItem.getActionView());
+
+        String query = mViewModel.getQueryText();
+
+        if (query != null ) {
+            searchView.setIconified(false);
+            searchView.setQuery(query, false);
+            searchView.clearFocus();
+        }
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                Log.d(TAG, "SerchView onQueryTextSubmit: " + query);
+                refreshGallery(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                Log.d(TAG, "SerchView onClose");
+                refreshGallery(null);
+                return false;
+            }
+        });
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
 
         mRecyclerViewAdapter.quit();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        setupSearchViewMenuItem(menu.findItem(R.id.menuitem_search));
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void refreshGallery(@Nullable String queryText) {
+        mRecyclerViewAdapter.clear();
+        mViewModel.setQueryText(queryText);
+        mViewModel.reloadPagesAsync();
+
+        mProgressLoading.setVisibility(View.VISIBLE);
     }
 }

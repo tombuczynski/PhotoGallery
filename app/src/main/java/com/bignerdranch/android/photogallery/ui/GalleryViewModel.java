@@ -42,6 +42,15 @@ public class GalleryViewModel extends ViewModel {
         mRequestedPage = requestedPage;
     }
 
+    private String mQueryText = null;
+
+    public String getQueryText() {
+        return mQueryText;
+    }
+
+    public void setQueryText(String queryText) {
+        mQueryText = queryText;
+    }
 
     public LiveData<List<Result<GalleryPage>>> getGalleryPages() {
         if (mGalleryPages == null)
@@ -98,19 +107,6 @@ public class GalleryViewModel extends ViewModel {
         return true;
     }
 
-    private void executeFetchPage(List<Result<GalleryPage>> galleryPages) {
-
-        getExecutor().execute(() -> {
-            Result<GalleryPage> result = FlickrFetcher.getRecentPhotos(mApiKey, mRequestedPage);
-            //Result<GalleryPage> result = FlickrFetcher.searchPhotos(mApiKey, mRequestedPage,"lego");
-
-            List<Result<GalleryPage>> updatedGalleryPages = new ArrayList<>(galleryPages);
-            updatedGalleryPages.add(result);
-
-            mGalleryPages.postValue(updatedGalleryPages);
-        });
-    }
-
     public void loadNextPageAsync() {
         if (! loadPageAsync()) {
             List<Result<GalleryPage>> galleryPages = getGalleryPages().getValue();
@@ -121,5 +117,39 @@ public class GalleryViewModel extends ViewModel {
                 executeFetchPage(galleryPages);
             }
         }
+    }
+
+    public boolean reloadPagesAsync() {
+        if (loadPageAsync())
+            return false;
+
+        List<Result<GalleryPage>> galleryPages = getGalleryPages().getValue();
+        assert galleryPages != null;
+
+        galleryPages.clear();
+        mRequestedPage = null;
+
+        return loadPageAsync();
+    }
+
+    private void executeFetchPage(List<Result<GalleryPage>> galleryPages) {
+
+        final String contentId = getQueryText();
+
+        getExecutor().execute(() -> {
+            Result<GalleryPage> result;
+
+            if (contentId == null) {
+                result = FlickrFetcher.getRecentPhotos(mApiKey, mRequestedPage);
+            } else {
+                result = FlickrFetcher.searchPhotos(mApiKey, mRequestedPage, contentId);
+            }
+
+            result.setContentId(contentId);
+            List<Result<GalleryPage>> updatedGalleryPages = new ArrayList<>(galleryPages);
+            updatedGalleryPages.add(result);
+
+            mGalleryPages.postValue(updatedGalleryPages);
+        });
     }
 }

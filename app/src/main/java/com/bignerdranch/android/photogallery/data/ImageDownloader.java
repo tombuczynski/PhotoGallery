@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.util.LruCache;
 
@@ -104,27 +105,34 @@ public class ImageDownloader<T extends ImageDownloader.Callback> extends Handler
         }
 
         mTargetObject2UrlMap.put(targetObject, imageUrl);
-        mDownloadsHandler.obtainMessage(MESSAGE_DOWNLOAD, targetObject).sendToTarget();
+
+        Message msg =  mDownloadsHandler.obtainMessage(MESSAGE_DOWNLOAD, targetObject);
+        mDownloadsHandler.sendMessageAtFrontOfQueue(msg);
 
         return null;
     }
 
     private void handlePreloadRequest(String url) {
+
         if (url == null)
             return;
 
-        Result<byte[]> resultBytes = HTTPSFetcher.fetchBytesFromURL(url);
+        if (mBitmapLruCache.get(url) == null) {
 
-        if (resultBytes.getErrorCode() == Result.ERR_OK) {
-            Bitmap bitmap = BitmapFactory.decodeByteArray(resultBytes.getContent(), 0, resultBytes.getContent().length);
+            Result<byte[]> resultBytes = HTTPSFetcher.fetchBytesFromURL(url);
 
-            if (bitmap != null) {
-                Result<Bitmap> resultBitmap = new Result<>(bitmap, resultBytes.getErrorCode(), resultBytes.getErrorMessage());
+            if (resultBytes.getErrorCode() == Result.ERR_OK) {
+                Bitmap bitmap = BitmapFactory.decodeByteArray(resultBytes.getContent(), 0, resultBytes.getContent().length);
 
-                mBitmapLruCache.put(url, resultBitmap);
-                mPreloadRequests.remove(url);
+                if (bitmap != null) {
+                    Result<Bitmap> resultBitmap = new Result<>(bitmap, resultBytes.getErrorCode(), resultBytes.getErrorMessage());
+
+                    mBitmapLruCache.put(url, resultBitmap);
+                }
             }
         }
+
+        mPreloadRequests.remove(url);
     }
 
     private void handleDownloadRequest(T targetObject) {

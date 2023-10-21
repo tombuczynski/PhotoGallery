@@ -84,7 +84,7 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         return mGalleryItems.size();
     }
 
-    public void update(List<GalleryItem> galleryItems, boolean reload) {
+    public void update(List<GalleryItem> galleryItems) {
         int oldCount = mGalleryItems.size();
         int newCount = galleryItems.size();
 
@@ -95,6 +95,16 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         } else if (newCount < oldCount) {
             notifyItemRangeRemoved(newCount, oldCount - newCount);
         }
+
+        mIsLastItemBinded = false;
+    }
+
+    public void clear() {
+        int oldCount = mGalleryItems.size();
+
+        mGalleryItems.clear();
+
+        notifyItemRangeRemoved(0, oldCount);
 
         mIsLastItemBinded = false;
     }
