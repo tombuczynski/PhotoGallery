@@ -20,7 +20,7 @@
         tools:itemCount="15"
         tools:layoutManager="GridLayoutManager"
         tools:listitem="@layout/gallery_item"
-        tools:spanCount="3" />
+        tools:spanCount="2" />
 
     <ProgressBar
         android:id="@+id/progressBarLoading"

@@ -8,6 +8,7 @@ import android.util.LruCache;
 import com.bignerdranch.android.photogallery.data.FlickrFetcher;
 import com.bignerdranch.android.photogallery.data.GalleryPage;
 import com.bignerdranch.android.photogallery.data.Result;
+import com.bignerdranch.android.photogallery.thutils.AppPrefs;
 
 import java.util.ArrayList;
 import java.util.List;

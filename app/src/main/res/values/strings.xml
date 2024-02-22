@@ -1,5 +1,14 @@
 <resources>
     <string name="app_name">Photo Gallery</string>
-    <string name="clear_search">Clear search</string>
-    <string name="search">Search</string>
+    <string name="menu_search">Search</string>
+    <string name="menu_start_notify">Start photo notifications</string>
+    <string name="menu_stop_notify">Stop photo notifications</string>
+    <string name="notify_started">Photo notifications started</string>
+    <string name="notify_stopped">Photo notifications stopped</string>
+    <string name="notify_channel_name">Content update</string>
+    <string name="notify_channel_description">Notifies about content updates</string>
+    <string name="no_notification_permission">You have not granted permission for notifaction</string>
+    <string name="notification_disabled">You have notifications disabled</string>
+    <string name="notification_title">New photos</string>
+    <string name="notification_description">New photos available for \"%s\" search</string>
 </resources>
