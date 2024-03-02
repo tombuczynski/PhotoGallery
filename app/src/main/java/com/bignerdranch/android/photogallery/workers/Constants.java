@@ -10,4 +10,8 @@ public final class Constants {
 
    public static final String CONTENT_UPDATE_WORK = "contentUpdate";
    public static final String NOTIFY_CHANNEL_ID = "ContentUpdate";
+
+   public static final String ACTION_SHOW_NOTIFICATION = "com.bignerdranch.android.photogallery.SHOW_NOTIFICATION";
+
+   public static final String PERM_SHOW_NOTIFICATION_RECEIVE = "com.bignerdranch.android.photogallery.SHOW_NOTIFICATION_RECEIVE";
 }

@@ -17,6 +17,12 @@ import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -58,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
 
     private String mApiKey;
     private boolean mContentUpdateWorkerStarted;
+
+    private BroadcastReceiver mShowNotificationReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -236,6 +244,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        registerShowNotificationReceiver(true);
+        super.onStop();
+    }
+
+    @Override
+    protected void onStart() {
+        registerShowNotificationReceiver(false);
+        super.onStart();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 
@@ -358,6 +378,29 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private void registerShowNotificationReceiver(boolean unregister) {
+
+        if (unregister && mShowNotificationReceiver != null)
+            unregisterReceiver(mShowNotificationReceiver);
+        else {
+            mShowNotificationReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (Objects.equals(intent.getAction(), Constants.ACTION_SHOW_NOTIFICATION)) {
+                        Log.d(TAG, "onReceive: ACTION_SHOW_NOTIFICATION");
+
+                        setResultCode(Activity.RESULT_CANCELED);
+                    }
+                }
+            };
+
+            IntentFilter filter = new IntentFilter(Constants.ACTION_SHOW_NOTIFICATION);
+            registerReceiver(mShowNotificationReceiver, filter, Constants.PERM_SHOW_NOTIFICATION_RECEIVE, null);
+        }
+
     }
 
 }

@@ -1,5 +1,6 @@
 package com.bignerdranch.android.photogallery.workers;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -9,12 +10,10 @@ import com.bignerdranch.android.photogallery.R;
 import com.bignerdranch.android.photogallery.data.FlickrFetcher;
 import com.bignerdranch.android.photogallery.data.GalleryItem;
 import com.bignerdranch.android.photogallery.data.GalleryPage;
-import com.bignerdranch.android.photogallery.data.Result;
 import com.bignerdranch.android.photogallery.thutils.AppNotifications;
 import com.bignerdranch.android.photogallery.thutils.AppPrefs;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
@@ -63,17 +62,22 @@ public class ContentUpdateWorker extends Worker {
             else {
                 Log.i(TAG, "New photo ID: " + id + ", searchText: " + searchText);
 
-                if (searchText != null)
-                    showNotification(searchText);
+            }
+
+            if (searchText != null) {
+                sendShowNotification(searchText);
             }
 
             AppPrefs.putStringPref(getApplicationContext(), Constants.KEY_LAST_ID, id);
         } else {
-            if (lastId.isEmpty())
+            if (lastId.isEmpty()) {
                 Log.w(TAG, "Still no photos, searchText: " + searchText);
-            else
+            }
+            else {
                 Log.i(TAG, "Old photo ID: " + lastId + ", searchText: " + searchText);
+            }
         }
+
 
         return Result.success();
     }
@@ -88,17 +92,14 @@ public class ContentUpdateWorker extends Worker {
         return dataBuild.build();
     }
 
-    private void showNotification(String searchText) {
-        Context c = getApplicationContext();
 
-        AppNotifications notifications = new AppNotifications(Constants.NOTIFY_CHANNEL_ID, c.getString(R.string.notify_channel_name), c.getString(R.string.notify_channel_description));
+    private void sendShowNotification(String searchText) {
+        Intent broadcastIntent = new Intent(Constants.ACTION_SHOW_NOTIFICATION);
+        broadcastIntent.putExtra(Constants.KEY_SEARCH_TEXT, searchText);
 
-        Intent tapIntent = new Intent(c, MainActivity.class);
-        tapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        notifications.notificationBasic(this.getApplicationContext(),
-                c.getString(R.string.notification_title), c.getString(R.string.notification_description, searchText),
-                1, tapIntent);
+        //getApplicationContext().sendBroadcast(broadcastIntent, Constants.PERM_SHOW_NOTIFICATION_RECEIVE);
+        getApplicationContext().sendOrderedBroadcast(broadcastIntent, Constants.PERM_SHOW_NOTIFICATION_RECEIVE,
+                null, null, Activity.RESULT_OK, null, null);
     }
 
 }

@@ -2,9 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <permission
+        android:name="com.bignerdranch.android.photogallery.SHOW_NOTIFICATION_RECEIVE"
+        android:protectionLevel="signature" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="com.bignerdranch.android.photogallery.SHOW_NOTIFICATION_RECEIVE" />
 
     <application
         android:allowBackup="true"
@@ -16,6 +21,23 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoGallery"
         tools:targetApi="31">
+        <receiver
+            android:name=".ShowNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter android:priority="-999">
+                <action android:name="com.bignerdranch.android.photogallery.SHOW_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".StartupReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
