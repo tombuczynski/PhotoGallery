@@ -4,6 +4,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
 import android.util.LruCache;
@@ -16,6 +17,7 @@ import com.bignerdranch.android.photogallery.R;
 import com.bignerdranch.android.photogallery.data.ImageDownloader;
 import com.bignerdranch.android.photogallery.data.GalleryItem;
 import com.bignerdranch.android.photogallery.data.Result;
+import com.bignerdranch.android.photogallery.thutils.SystemActions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecyclerViewAdapter.GalleryItemViewHolder> {
 
-    private static final int CACHE_PRELOAD_CNT = 10;
+    private static final int CACHE_PRELOAD_CNT = 20;
     private List<GalleryItem> mGalleryItems = new ArrayList<>();
 
     private boolean mIsLastItemBinded = false;
@@ -54,14 +56,14 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
 
     @Override
     public void onBindViewHolder(@NonNull GalleryItemViewHolder holder, int position) {
-        //holder.bind(mGalleryItems.get(position), position);
+        GalleryItem item = mGalleryItems.get(position);
 
-        Result<Bitmap> cachedResultBitmap = mDownloader.downloadAsync(holder, mGalleryItems.get(position).getUrl());
+        Result<Bitmap> cachedResultBitmap = mDownloader.downloadAsync(holder, item.getUrl());
 
         if (cachedResultBitmap != null)
-            holder.onDownloadFinished(cachedResultBitmap);
+            holder.bind(cachedResultBitmap, item.getPhotoWebPageUri());
         else
-            holder.bind(R.drawable.baseline_hourglass_empty_24);
+            holder.bind(R.drawable.baseline_hourglass_empty_24, item.getPhotoWebPageUri());
 
         int p = position;
         int cnt = CACHE_PRELOAD_CNT;
@@ -126,30 +128,49 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
     public class GalleryItemViewHolder extends RecyclerView.ViewHolder implements ImageDownloader.Callback {
 
         private final ImageView mPhotoView;
+        private Uri mPhotoWebPageUri;
 
         public GalleryItemViewHolder(@NonNull View itemView) {
             super(itemView);
 
             mPhotoView = (ImageView) itemView;
+
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SystemActions.openWebPageInBrowser(mPhotoView.getContext(), mPhotoWebPageUri);
+                }
+            });
         }
 
-        public void bind(Drawable image) {
+        public void updateImage(Drawable image) {
             mPhotoView.setImageDrawable (image);
         }
 
-        public void bind(@DrawableRes int imageRes) {
+        public void updateImage(@DrawableRes int imageRes) {
             Drawable image = ResourcesCompat.getDrawable(mRes, imageRes, null);
-            bind(image);
+            updateImage(image);
+        }
+
+        public void bind(@DrawableRes int imageRes, Uri photoWebPageUri) {
+            mPhotoWebPageUri = photoWebPageUri;
+            updateImage(imageRes);
+        }
+
+        public void bind(Result<Bitmap> result, Uri photoWebPageUri) {
+            mPhotoWebPageUri = photoWebPageUri;
+            BitmapDrawable image = new BitmapDrawable(mRes, result.getContent());
+            updateImage(image);
         }
 
         @Override
         public void onDownloadFinished(Result<Bitmap> result) {
             if (result.getErrorCode() == Result.ERR_OK) {
                 BitmapDrawable image = new BitmapDrawable(mRes, result.getContent());
-                bind(image);
+                updateImage(image);
             } else {
                 Log.e("ViewHolder", "Error:" + result.getErrorCode() + " " + result.getErrorMessage());
-                bind(R.drawable.baseline_highlight_off_24);
+                updateImage(R.drawable.baseline_highlight_off_24);
             }
         }
     }
